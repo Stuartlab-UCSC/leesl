@@ -12,6 +12,7 @@ import numpy as np
 import leesl
 from itertools import product
 
+
 def test_calculate_pvalue_greater_then():
     data = np.concatenate([np.repeat(1, 10), np.repeat(5, 10)])
     answer = leesl.calculate_pvalue(2, data, "greater-than")
@@ -30,10 +31,9 @@ def test_calculate_pvalue_two_sided():
     assert answer == 1
 
 
-
 def test_permutation_test_sample_size():
     spatial_weight_matrix = checkerboard_similarity()
-    known_arrangements = get_spatial_vectors_df()[["A","B"]]
+    known_arrangements = get_spatial_vectors_df()[["A", "B"]]
     x = known_arrangements["A"].values
     y = known_arrangements["B"].values
     randomized, a, p = leesl.permutation_test(
@@ -47,7 +47,7 @@ def test_permutation_test_sample_size():
 
 def test_permutation_test_sample_size_n_jobs():
     spatial_weight_matrix = checkerboard_similarity()
-    known_arrangements = get_spatial_vectors_df()[["A","B"]]
+    known_arrangements = get_spatial_vectors_df()[["A", "B"]]
     x = known_arrangements["A"].values
     y = known_arrangements["B"].values
     randomized, a, p = leesl.permutation_test(
@@ -66,7 +66,7 @@ def test_L_many_pandas():
     known_answers = get_known_answers()
     mean_centered = known_arrangements - known_arrangements.mean(axis=0)
     stdev = known_arrangements.std(axis=0, ddof=0)
-    Z =  mean_centered / stdev
+    Z = mean_centered / stdev
     passes = np.allclose(
         known_answers,
         leesl.L(Z, spatial_weight_matrix)
@@ -81,7 +81,7 @@ def test_L_many_numpy():
     known_answers = get_known_answers()
     mean_centered = known_arrangements - known_arrangements.mean(axis=0)
     stdev = known_arrangements.std(axis=0, ddof=0)
-    Z =  mean_centered / stdev
+    Z = mean_centered / stdev
     passes = np.allclose(
         known_answers,
         leesl.L(Z, spatial_weight_matrix)
@@ -93,11 +93,11 @@ def test_L_many_numpy():
 def test_L_single_numpy():
     spatial_weight_matrix = checkerboard_similarity()
     known_arrangement = get_spatial_vectors_df()["B"].values
-    known_answers = get_known_answers()[1,1]
+    known_answers = get_known_answers()[1, 1]
 
     mean_centered = known_arrangement - known_arrangement.mean(axis=0)
     stdev = known_arrangement.std(axis=0, ddof=0)
-    Z =  mean_centered / stdev
+    Z = mean_centered / stdev
 
     passes = np.isclose(
         known_answers,
@@ -110,11 +110,11 @@ def test_L_single_numpy():
 def test_L_single_pandas():
     spatial_weight_matrix = checkerboard_similarity()
     known_arrangement = get_spatial_vectors_df()["B"]
-    known_answers = get_known_answers()[1,1]
+    known_answers = get_known_answers()[1, 1]
 
     mean_centered = known_arrangement - known_arrangement.mean(axis=0)
     stdev = known_arrangement.std(axis=0, ddof=0)
-    Z =  mean_centered / stdev
+    Z = mean_centered / stdev
 
     passes = np.isclose(
         known_answers,
@@ -271,7 +271,7 @@ def test_SSS_single_pandas():
         spatial_vector_pd,
         spatial_weight_matrix
     )
-    known_sss = get_known_answers()[0,0]
+    known_sss = get_known_answers()[0, 0]
 
     assert np.allclose(sss, known_sss)
 
@@ -301,11 +301,11 @@ def checkerboard_similarity():
     # Functions to run through at each square producing
     # neighbors.
     def neighbors(row_n, col_n):
-         return [
-            (row_n + 1, col_n), #down
-            (row_n - 1, col_n), #up
-            (row_n, col_n + 1), #right
-            (row_n, col_n - 1), #left
+        return [
+            (row_n + 1, col_n),  # down
+            (row_n - 1, col_n),  # up
+            (row_n, col_n + 1),  # right
+            (row_n, col_n - 1),  # left
         ]
 
     def on_board(row_col, length=6):
@@ -316,7 +316,7 @@ def checkerboard_similarity():
             )
 
     board_indecies = [range(board_length), range(board_length)]
-    for row_n, col_n in product(*board_indecies):
+    for row_n, col_n in product(board_indecies[0], board_indecies[1]):
         neighbors_on_board = filter(
             on_board,
             neighbors(row_n, col_n)
@@ -325,7 +325,10 @@ def checkerboard_similarity():
 
     # Throw it in a dataframe.
     df = pd.DataFrame(
-        np.reshape(np.repeat(0, 36*36), (36, 36)),
+        np.reshape(
+            np.repeat(0, board_length**2 * board_length**2),
+            (board_length**2, board_length**2)
+        ),
         index=square_sim_dict.keys(),
         columns=square_sim_dict.keys()
     )
@@ -345,11 +348,11 @@ def get_known_answers():
     # leesl in the package spdep Version 0.6-15.
     known_answers = np.array(
         [
-            [.358653846, 0, 0, -0.044989875,  0.184495192],
-            [0, 1,  -1, .0678401,  -.0193506],
-            [0,  -1,   1, -.0678401, .0193506],
-            [-.0449899, .0678401,  -.0678401, .1385315, -.135423],
-            [.184495,  -.01935059,   .01935059, -.1354234, .409495192]
+            [.358653846, 0, 0, -0.044989875, 0.184495192],
+            [0, 1, -1, .0678401, -.0193506],
+            [0, -1, 1, -.0678401, .0193506],
+            [-.0449899, .0678401, -.0678401, .1385315, -.135423],
+            [.184495, -.01935059, .01935059, -.1354234, .409495192]
         ]
     )
     return known_answers

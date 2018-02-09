@@ -1,6 +1,10 @@
 # Jet brains:
 .idea/*
 
+# linter
+lint.sh
+lintout
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

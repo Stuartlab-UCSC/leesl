@@ -16,19 +16,18 @@ Here's a link:
 import numpy as np
 import multiprocessing
 
+
 def statistic_matrix(X, spatial_weight_matrix, Y=None):
     """
-    Produces a lees l statistic matrix. If only X is given lees L
-    matrix will represent spatial association of the attributes in X.
-    The rows of the matrices X and Y should represent the nodes in the
-    spatial weight matrix. The row order of the X Y must correspond
-    to the row/col order in the spatial weight matrix.
+    Produce a lees l statistic matrix.
+
+    The rows of the matrices X and Y must be parallel to the rows/cols
+    in the spatial weight matrix.
     :param X: numpy matrix or pandas dataframe.
     :param spatial_weight_matrix: nXn numpy matrix or pandas dataframe.
     :param Y: numpy matrix or pandas dataframe.
     :return: numpy matrix lees l statistic matrix.
     """
-
     # Using similar notation as paper, see equation (18).
     V = spatial_weight_matrix
 
@@ -53,36 +52,9 @@ def statistic_matrix(X, spatial_weight_matrix, Y=None):
         Z = (Y - Y.mean(axis=0)) / Y.std(axis=0, ddof=0)
 
     # Z^T (V^T V) Z : 'Z' is Y if two sets of data are given.
-    ZTVTVZ = np.dot(np.dot(ZT,  VTV), Z)
+    ZTVTVZ = np.dot(np.dot(ZT, VTV), Z)
 
     return ZTVTVZ / denominator
-
-
-def L(Z, V):
-    """"See equation (18) from the paper."""
-    VTV = np.dot(V.transpose(), V)
-    ZTVTVZ = np.dot(np.dot(Z.transpose(),  VTV), Z)
-    return ZTVTVZ / VTV.sum().sum()
-
-
-def spatial_smoothing_scalar(X, spatial_weight_matrix):
-    """Produces the SSS. See equation (9) of paper."""
-    # Left side of the product in (9).
-    numerator_left = float(len(X))  # n
-    denomonator_left = (spatial_weight_matrix.sum(axis=1)**2).sum()
-
-    left_side = numerator_left / denomonator_left
-
-    # Right side of the product in (9).
-    # Inner parentheses for numerator is a mean centered X.
-    mean_center = X - X.mean(axis=0)
-    outer_parentheses = np.dot(spatial_weight_matrix, mean_center)
-    numerator_right = (outer_parentheses ** 2).sum(axis=0)
-    denomonator_right = (mean_center ** 2).sum(axis=0)
-
-    right_side = numerator_right / denomonator_right
-
-    return left_side * right_side
 
 
 def permutation_test(
@@ -95,6 +67,7 @@ def permutation_test(
 ):
     """
     Statistical evaluation of the spatial relationship between x and y.
+
     See section 4.4 of paper.
     :param x: numeric vector in space represented by spatial weights
     :param y: numeric vector in space represented by spatial weights
@@ -107,7 +80,7 @@ def permutation_test(
     """
     actual = statistic_matrix(x, spatial_weight_matrix, y)
 
-    # Make an array of arguements to feed into a function via map.
+    # Make an array of arguments to feed into a function via map.
     argument_array = \
         [
             (
@@ -134,9 +107,35 @@ def permutation_test(
     return randomized_leesls, actual, pvalue
 
 
-def random_indices_gen(n, length):
-    """Generates n number of randomly shuffled numbers [0:length)."""
+def L(Z, V):
+    """See equation (18) from the paper."""
+    VTV = np.dot(V.transpose(), V)
+    ZTVTVZ = np.dot(np.dot(Z.transpose(), VTV), Z)
+    return ZTVTVZ / VTV.sum().sum()
 
+
+def spatial_smoothing_scalar(X, spatial_weight_matrix):
+    """Produce the SSS. See equation (9) of paper."""
+    # Left side of the product in (9).
+    numerator_left = float(len(X))  # n
+    denomonator_left = (spatial_weight_matrix.sum(axis=1)**2).sum()
+
+    left_side = numerator_left / denomonator_left
+
+    # Right side of the product in (9).
+    # Inner parentheses for numerator is a mean centered X.
+    mean_center = X - X.mean(axis=0)
+    outer_parentheses = np.dot(spatial_weight_matrix, mean_center)
+    numerator_right = (outer_parentheses ** 2).sum(axis=0)
+    denomonator_right = (mean_center ** 2).sum(axis=0)
+
+    right_side = numerator_right / denomonator_right
+
+    return left_side * right_side
+
+
+def random_indices_gen(n, length):
+    """Generate n number of randomly shuffled numbers [0:length)."""
     number_of_times = 0
     while number_of_times < n:
         yield np.random.choice(
@@ -148,15 +147,18 @@ def random_indices_gen(n, length):
 
 
 def calculate_pvalue(actual, randomized, test="two-sided"):
-    """Calculates pvalue for a permutation test."""
-
+    """Calculate pvalue for a permutation test."""
     n = len(randomized)
-    actual > randomized
 
     # Functions calculating counts for a type of test.
-    greater = lambda randomized, actual: (actual > randomized).sum()
-    lesser = lambda randomized, actual: (actual < randomized).sum()
-    both = lambda r, a: lesser(r, a) + greater(r, a)
+    def greater(randomized, actual):
+        return (actual > randomized).sum()
+
+    def lesser(randomized, actual):
+        return (actual < randomized).sum()
+
+    def both(randomized, actual):
+        return lesser(randomized, actual) + greater(randomized, actual)
 
     # Dictionary is working as a switch statement for type of test.
     tests = {
@@ -172,10 +174,9 @@ def calculate_pvalue(actual, randomized, test="two-sided"):
 
 def stat_wrapper(argument_triple):
     """Unpacks a triple and calls lees L statistic function."""
-
-    leesL = statistic_matrix(
+    leesL_statistic = statistic_matrix(
         X=argument_triple[0],
         spatial_weight_matrix=argument_triple[1],
         Y=argument_triple[2]
     )
-    return leesL
+    return leesL_statistic
